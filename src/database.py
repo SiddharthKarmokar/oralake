@@ -21,7 +21,7 @@ def connect_oracledb()->oracledb.Connection:
 
 if __name__ == "__main__":
     try:
-        with connect_oracledb as conn:
+        with connect_oracledb() as conn:
             cursor = conn.cursor
             cursor.execute("SELECT 'Connected to OracleDB!' from dual")
             message = cursor.fetchone()[0]
