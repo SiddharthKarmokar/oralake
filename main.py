@@ -3,9 +3,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.responses import RedirectResponse
 from src.routes.sample_routes import router as oracle_router
+from src.routes.datalake_routes import router as datalake_router
 
 app = FastAPI()
 
+app.include_router(datalake_router)
 app.include_router(oracle_router)
 app.include_router(oracle_router, prefix="/oracle")
 
