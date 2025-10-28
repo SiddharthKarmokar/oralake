@@ -44,10 +44,36 @@ def get_object(object_id: int)->bytes:
         logger.error(f"Error occured at get_object: {e}")
         raise
 
+def tag_object(object_id: int, tag: str, description: str = None, schema_hint: str = None)->bool:
+    try:
+        with pool.acquire() as conn:
+            cursor = conn.cursor()
+            cursor.callproc(
+                "ora_lake_ops.tag_object",
+                [object_id, tag, description, schema_hint]
+            )
+            conn.commit()
+            logger.info(f"Object with object_id {object_id} was tagged")
+            return True
+    except oracledb.DatabaseError as e:
+        error_obj = e.args[0]
+        error_msg = str(error_obj)
+
+        if "ORA-02291" in error_msg:
+            logger.warning(f"Object with ID: {object_id} was not found")
+            return False
+
+        logger.error(f"Database Error occurred at get_object: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error occured at get_object: {e}")
+        raise
+
 
 
 if __name__ == "__main__":
-    result = get_object(
-        object_id=9
+    result = tag_object(
+        object_id = 9,
+        tag = "json"
     )
     logger.info(result)
