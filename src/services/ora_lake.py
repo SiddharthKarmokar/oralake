@@ -30,7 +30,7 @@ def get_object(object_id: int)->bytes:
             )
             logger.info(f"Object found: {result}")
             return result
-    except oracledb.exceptions.DatabaseError as e:
+    except oracledb.DatabaseError as e:
         error_obj = e.args[0]
         error_msg = str(error_obj)
 
@@ -43,6 +43,8 @@ def get_object(object_id: int)->bytes:
     except Exception as e:
         logger.error(f"Error occured at get_object: {e}")
         raise
+
+
 
 if __name__ == "__main__":
     result = get_object(
