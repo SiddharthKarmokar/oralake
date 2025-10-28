@@ -1,5 +1,6 @@
 from src import logger
 from src.database import pool
+from typing import List
 import oracledb
 
 def add_object(name: str, obj_type: str, content: bytes, tags: str,
@@ -59,6 +60,10 @@ def tag_object(object_id: int, tag: str, description: str = None, schema_hint: s
         error_obj = e.args[0]
         error_msg = str(error_obj)
 
+        if "PLS-00302" in error_msg:
+            logger.error("Procedure 'tag_objects' does not exist in ORA_LAKE_OPS package.")
+            return False
+
         if "ORA-02291" in error_msg:
             logger.warning(f"Object with ID: {object_id} was not found")
             return False
@@ -69,11 +74,47 @@ def tag_object(object_id: int, tag: str, description: str = None, schema_hint: s
         logger.error(f"Error occured at get_object: {e}")
         raise
 
+def query_by_tag(tag: str)->List[bytes]:
+    try:
+        with pool.acquire() as conn:
+            cursor = conn.cursor()
 
+            ref_cursor = cursor.callfunc(
+                "ora_lake_ops.query_objects_by_tag",
+                oracledb.CURSOR,
+                [tag]
+            )
+            results = ref_cursor.fetchall()
+            objects = []
+            for res in results:
+                object_id = res[0]
+                objects.append(
+                    get_object(
+                        object_id=object_id
+                    )
+                )
+            logger.info(f"Fetched {len(results)} objects for tag='{tag}'")
+            return objects
+    except oracledb.DatabaseError as e:
+        error_obj = e.args[0]
+        error_msg = str(error_obj)
+
+        if "PLS-00302" in error_msg:
+            logger.error("Procedure 'query_object_by_tag' does not exist in ORA_LAKE_OPS package.")
+            return False
+
+        if "ORA-02291" in error_msg:
+            logger.warning(f"Object with ID: {object_id} was not found")
+            return False
+
+        logger.error(f"Database Error occurred at get_object: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Error occured at get_object: {e}")
+        raise
 
 if __name__ == "__main__":
-    result = tag_object(
-        object_id = 9,
-        tag = "json"
+    result = query_by_tag(
+        tag = "csv"
     )
     logger.info(result)
