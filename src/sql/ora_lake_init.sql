@@ -4,8 +4,8 @@ CREATE OR REPLACE PACKAGE ora_lake_ops AS
     p_type VARCHAR2,
     p_content BLOB,
     p_tags CLOB,
-    p_description CLOB DEFAULT NULL,
-    p_schema_hint CLOB DEFAULT NULL
+    p_description CLOB,
+    p_schema_hint CLOB
   );
   FUNCTION get_object(p_id NUMBER) RETURN BLOB;
   PROCEDURE tag_object(

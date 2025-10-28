@@ -1,4 +1,5 @@
 from src.services.ora_lake import add_object
+import pytest
 
 if __name__ == "__main__":
     content = b'{"name": "Alice", "age":25}'

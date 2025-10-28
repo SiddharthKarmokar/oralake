@@ -1,20 +1,11 @@
-# --- Core Backend ---
-fastapi                # API framework
-uvicorn                # ASGI server for FastAPI
-oracledb               # Oracle Database client
-
-# --- Data & Validation ---
-pydantic               # For data validation
-pydantic-settings       # For environment configuration (.env support)
-
-# --- Frontend (Data App) ---
-streamlit              # Simple interactive frontend
-
-# --- Utilities ---
-python-dotenv          # To load env variables easily
-pandas                 # For DataFrame-based data ops in Streamlit
-sqlalchemy             # (Optional but strongly recommended) ORM/DB abstraction layer
-
-# --- Developer Tools ---
-black                  # Code formatter
-isort                  # Imports sorter
+fastapi            
+uvicorn           
+oracledb           
+pydantic             
+pydantic-settings      
+streamlit              
+python-dotenv        
+pandas                 
+sqlalchemy            
+black                 
+isort            

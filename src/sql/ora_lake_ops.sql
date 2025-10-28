@@ -5,9 +5,9 @@ CREATE OR REPLACE PACKAGE BODY ora_lake_ops AS
     p_name        VARCHAR2,
     p_type        VARCHAR2,
     p_content     BLOB,
-    p_tags        CLOB DEFAULT NULL,
-    p_description CLOB DEFAULT NULL,
-    p_schema_hint CLOB DEFAULT NULL
+    p_tags        CLOB,
+    p_description CLOB,
+    p_schema_hint CLOB
   ) IS
     l_id NUMBER;
   BEGIN
