@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  oracledb:
+    build: .
+    container_name: oracledb
+    environment:
+      - ORACLE_PASSWORD=Password123
+      - ORACLE_DATABASE=XEPDB1
+      - ORACLE_PWD=Password123
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    volumes:
+      - ${PWD}/src/sql/init:/opt/oracle/scripts/sql
+    healthcheck:
+      test: ["CMD", "pgrep", "tnslsnr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  oracle_data: {}

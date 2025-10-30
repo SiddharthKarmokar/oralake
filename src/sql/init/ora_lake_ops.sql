@@ -10,8 +10,8 @@ CREATE OR REPLACE PACKAGE BODY ora_lake_ops AS
   ) RETURN NUMBER IS
     l_id NUMBER;
   BEGIN
-    INSERT INTO ora_lake_objects(object_name, object_type, content)
-    VALUES(p_name, p_type, p_content)
+    INSERT INTO ora_lake_objects(object_name, object_type, content, created_at, updated_at, version)
+    VALUES(p_name, p_type, p_content, SYSTIMESTAMP, SYSTIMESTAMP, 1)
     RETURNING object_id INTO l_id;
 
     IF p_tags IS NOT NULL OR p_description IS NOT NULL OR p_schema_hint IS NOT NULL THEN
@@ -23,6 +23,7 @@ CREATE OR REPLACE PACKAGE BODY ora_lake_ops AS
     RETURN l_id;
   END add_object;
 
+
   FUNCTION get_object(p_id NUMBER) RETURN BLOB IS
     l_content BLOB;
   BEGIN
@@ -31,6 +32,7 @@ CREATE OR REPLACE PACKAGE BODY ora_lake_ops AS
     WHERE object_id = p_id;
     RETURN l_content;
   END get_object;
+
 
   PROCEDURE tag_object(
     p_id           NUMBER,
@@ -44,16 +46,27 @@ CREATE OR REPLACE PACKAGE BODY ora_lake_ops AS
     COMMIT;
   END tag_object;
 
+
   FUNCTION query_objects_by_tag(p_tag VARCHAR2) RETURN SYS_REFCURSOR IS
     l_cursor SYS_REFCURSOR;
   BEGIN
     OPEN l_cursor FOR
-      SELECT o.object_id, o.object_name
+      SELECT o.object_id, o.object_name, o.version, o.created_at, o.updated_at
       FROM ora_lake_objects o
       JOIN ora_lake_metadata m ON o.object_id = m.object_id
       WHERE m.tag = p_tag;
     RETURN l_cursor;
   END query_objects_by_tag;
+
+
+  PROCEDURE increment_version(p_id NUMBER) IS
+  BEGIN
+    UPDATE ora_lake_objects
+    SET version = version + 1,
+        updated_at = SYSTIMESTAMP
+    WHERE object_id = p_id;
+    COMMIT;
+  END increment_version;
 
 END ora_lake_ops;
 /
