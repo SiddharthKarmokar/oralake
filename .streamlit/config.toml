@@ -1,0 +1,15 @@
+[theme]
+# Inspired by Anthropic Light Style
+base = "light"
+primaryColor = "#0055ff"
+backgroundColor = "#fafafa"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#1c1c1e"
+font = "sans serif"
+
+# Optional customizations
+# You can tweak these if you want a softer aesthetic
+[theme.custom]
+borderColor = "#e5e5e5"
+hoverColor = "#f0f3ff"
+accentColor = "#4c8bf5"

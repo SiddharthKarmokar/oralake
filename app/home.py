@@ -1,4 +1,6 @@
 import streamlit as st
+from frontend_utils import apply_custom_css
+apply_custom_css()
 
 st.set_page_config(page_title="Oracle Data Lake", page_icon="💧")
 st.title("💧 Oracle Data Lake Dashboard")
