@@ -1,0 +1,37 @@
+/* ----------- Global Layout ----------- */
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* ----------- Headers ----------- */
+h1, h2, h3, h4, h5, h6 {
+    color: #1c1c1e !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* ----------- Buttons ----------- */
+div.stButton > button {
+    background-color: #0055ff !important;
+    color: white !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease-in-out;
+}
+div.stButton > button:hover {
+    background-color: #0041cc !important;
+    transform: scale(1.03);
+}
+
+/* ----------- Inputs ----------- */
+.stTextInput input, .stTextArea textarea {
+    border-radius: 8px !important;
+    border: 1px solid #ccc !important;
+    background-color: #fff !important;
+}
+
+/* ----------- Success / Error Message Tweaks ----------- */
+.stAlert {
+    border-radius: 10px !important;
+    font-weight: 500 !important;
+}

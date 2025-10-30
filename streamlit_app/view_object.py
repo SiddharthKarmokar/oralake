@@ -1,5 +1,7 @@
 import streamlit as st
 import requests
+from frontend_utils import apply_custom_css
+apply_custom_css()
 
 st.title("Oracle Data Viewer")
 
