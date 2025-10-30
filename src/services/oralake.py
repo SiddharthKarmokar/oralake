@@ -1,6 +1,6 @@
 from src import logger
 from src.database import pool
-from typing import List
+from typing import List, Optional
 import oracledb
 
 def add_object(name: str, obj_type: str, content: bytes, tags: str,
@@ -112,6 +112,39 @@ def query_by_tag(tag: str)->List[bytes]:
     except Exception as e:
         logger.error(f"Error occured at get_object: {e}")
         raise
+
+def update_object(name: str, obj_type: str, content: bytes, tags: str,
+                  description: Optional[str] = None) -> bool:
+    try:
+        with pool.acquire() as conn:
+            cursor = conn.cursor()
+            cursor.callproc(
+                "ora_lake_ops.update_object",
+                [name, obj_type, content, tags, description]
+            )
+            conn.commit()
+            logger.info(f"Object '{name}' updated successfully.")
+            return True
+    except Exception as e:
+        logger.error(f"Error occurred at update_object: {e}")
+        raise
+
+
+def rollback_object(name: str, obj_type: str, version: int) -> bool:
+    try:
+        with pool.acquire() as conn:
+            cursor = conn.cursor()
+            cursor.callproc(
+                "ora_lake_ops.rollback_object",
+                [name, obj_type, version]
+            )
+            conn.commit()
+            logger.info(f"Rolled back '{name}' ({obj_type}) to version {version}.")
+            return True
+    except Exception as e:
+        logger.error(f"Error occurred at rollback_object: {e}")
+        raise
+
 
 if __name__ == "__main__":
     result = query_by_tag(

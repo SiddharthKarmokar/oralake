@@ -1,8 +1,8 @@
-from src.services.ora_lake import add_object, get_object, tag_object, query_by_tag
+from src.services.oralake import add_object, get_object, tag_object, query_by_tag
 import pytest
 
 @pytest.mark.integration
-def test_add_get_object(monkeypatch):
+def test_add_get_object():
     content = b'{"name": "Alice", "age":25}'
     obj_id = add_object(
         name="user_1",
@@ -16,7 +16,7 @@ def test_add_get_object(monkeypatch):
 
     fetched = get_object(obj_id)
     assert isinstance(fetched, (bytes, bytearray))
-    assert b"Bob" in fetched
+    assert b"Alice" in fetched
 
 @pytest.mark.integration
 def test_tag_object():

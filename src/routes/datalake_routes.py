@@ -1,7 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 import os
 import mimetypes
-from src.services.ora_lake import add_object
+from src.services.oralake import add_object
 
 router = APIRouter(prefix="/datalake", tags=["Data Lake"])
 

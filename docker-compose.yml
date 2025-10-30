@@ -12,7 +12,7 @@ services:
       - "1521:1521"
       - "5500:5500"
     volumes:
-      - ${PWD}/src/sql/init:/opt/oracle/scripts/sql
+      - ./src/sql/init:/opt/oracle/scripts/sql
     healthcheck:
       test: ["CMD", "pgrep", "tnslsnr"]
       interval: 10s
