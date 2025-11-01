@@ -65,11 +65,11 @@
 
 import streamlit as st
 from frontend_utils import apply_custom_css
-from add_object import render_add_object_section
-from tag_object import render_tag_object_section
-from query_by_tag import render_query_by_tag_section
-from get_object import render_get_object_section
-from view_object import render_view_object_section
+from add_object import render_add_object
+from tag_object import render_tag_object
+from query_by_tag import render_query_by_tag
+from get_object import render_get_object
+from view_object import render_view_object
 
 # ---------------------------
 # Page Configuration
@@ -119,31 +119,31 @@ st.markdown("""
 # Section 1: Add Object
 # ---------------------------
 st.markdown('<div id="add-section"></div>', unsafe_allow_html=True)
-render_add_object_section()
+render_add_object()
 
 # ---------------------------
 # Section 2: Tag Object
 # ---------------------------
 st.markdown('<div id="tag-section"></div>', unsafe_allow_html=True)
-render_tag_object_section()
+render_tag_object()
 
 # ---------------------------
 # Section 3: Query by Tag
 # ---------------------------
 st.markdown('<div id="query-section"></div>', unsafe_allow_html=True)
-render_query_by_tag_section()
+render_query_by_tag()
 
 # ---------------------------
 # Section 4: Get Object
 # ---------------------------
 st.markdown('<div id="get-section"></div>', unsafe_allow_html=True)
-render_get_object_section()
+render_get_object()
 
 # ---------------------------
 # Section 5: View Object
 # ---------------------------
 st.markdown('<div id="view-section"></div>', unsafe_allow_html=True)
-render_view_object_section()
+render_view_object()
 
 # ---------------------------
 # Sidebar

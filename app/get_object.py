@@ -47,7 +47,7 @@ import requests
 import base64
 from frontend_utils import apply_custom_css
 
-def render_get_object_section():
+def render_get_object():
     apply_custom_css()
 
     with st.container():
