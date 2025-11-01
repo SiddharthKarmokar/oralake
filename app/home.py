@@ -86,10 +86,10 @@ st.set_page_config(
 # ---------------------------
 apply_custom_css()
 
-# ---------------------------
-# Header Section
-# ---------------------------
-st.title("💧 Oracle Data Lake Portal")
+st.set_page_config(page_title="Oracle Data Lake", page_icon="💧")
+st.title("Oracle Data Lake Dashboard")
+
+st.sidebar.success("Select a page above ⬆️")
 
 st.markdown("""
 Welcome to the unified **Oracle Data Lake Dashboard**.  

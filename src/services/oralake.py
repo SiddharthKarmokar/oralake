@@ -3,70 +3,45 @@ from src.database import pool
 from typing import List, Optional
 import oracledb
 
-# def add_object(name: str, obj_type: str, content: bytes, tags: str,
-#                description: str = None, schema_hint: str = None):
-#     try:
-#         with pool.acquire() as conn:
-#             cursor = conn.cursor()
-#             object_id = cursor.callfunc(
-#                 "ora_lake_ops.add_object",
-#                 oracledb.NUMBER,
-#                 [name, obj_type, content, tags, description, schema_hint]
-#             )
-#             conn.commit()
-#             logger.info(f"Object added with ID {object_id}")
-#             return object_id
-#     except Exception as e:
-#         logger.error(f"Error Occurred at add_object: {e}")
-#         raise
-
 def add_object(name: str, obj_type: str, content: bytes, tags: str,
                description: str = None, schema_hint: str = None):
     try:
         with pool.acquire() as conn:
             cursor = conn.cursor()
-
-            # --- Prepare LOBs properly ---
-            blob_var = cursor.var(oracledb.BLOB)
-            blob_var.setvalue(0, content)
-
-            clob_tags = cursor.var(oracledb.CLOB)
-            clob_tags.setvalue(0, tags if tags else "")
-
-            clob_description = cursor.var(oracledb.CLOB)
-            clob_description.setvalue(0, description if description else "")
-
-            clob_schema_hint = cursor.var(oracledb.CLOB)
-            clob_schema_hint.setvalue(0, schema_hint if schema_hint else "")
-
-            # --- Call PL/SQL function safely ---
             object_id = cursor.callfunc(
                 "ora_lake_ops.add_object",
                 oracledb.NUMBER,
-                [name, obj_type, blob_var, clob_tags, clob_description, clob_schema_hint]
+                [name, obj_type, content, tags, description, schema_hint]
             )
-
             conn.commit()
-            logger.info(f"✅ Object added with ID {object_id}")
-            return int(object_id)
-
+            logger.info(f"Object added with ID {object_id}")
+            return object_id
     except Exception as e:
-        logger.error(f"❌ Error Occurred at add_object: {e}")
+        logger.error(f"Error Occurred at add_object: {e}")
         raise
-
-##########################
 
 def get_object(object_id: int)->bytes:
     try:
         with pool.acquire() as conn:
             cursor = conn.cursor()
-            result = cursor.callfunc(
-                "ora_lake_ops.get_object",
-                bytes,
-                [object_id]
+            
+            # Use oracledb.BLOB for proper BLOB handling
+            result = cursor.var(oracledb.BLOB)
+            cursor.execute(
+                "BEGIN :result := ora_lake_ops.get_object(:id); END;",
+                result=result,
+                id=object_id
             )
-            logger.info(f"Object found: {result}")
-            return result
+            
+            # Read the BLOB data
+            if result.getvalue() is not None:
+                blob_data = result.getvalue().read()
+                logger.info(f"Object found: {len(blob_data)} bytes")
+                return blob_data
+            else:
+                logger.warning(f"Object with ID: {object_id} was not found")
+                return None
+                
     except oracledb.DatabaseError as e:
         error_obj = e.args[0]
         error_msg = str(error_obj)
@@ -124,11 +99,9 @@ def query_by_tag(tag: str)->List[bytes]:
             objects = []
             for res in results:
                 object_id = res[0]
-                objects.append(
-                    get_object(
-                        object_id=object_id
-                    )
-                )
+                obj_content = get_object(object_id=object_id)
+                if obj_content:
+                    objects.append(obj_content)
             logger.info(f"Fetched {len(results)} objects for tag='{tag}'")
             return objects
     except oracledb.DatabaseError as e:
