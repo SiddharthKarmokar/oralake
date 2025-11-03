@@ -11,6 +11,7 @@ import io
 from PIL import Image
 import json
 from datetime import datetime
+import time
 
 
 class MediaStorage:
@@ -29,20 +30,7 @@ class MediaStorage:
         quality: int = 85,
         max_dimension: Optional[int] = None
     ) -> int:
-        """
-        Save an image to OraLake with optional compression and resizing
-        
-        Args:
-            file_path: Path to the image file
-            name: Custom name (defaults to filename)
-            tags: Comma-separated tags
-            compress: Whether to compress the image
-            quality: JPEG quality (1-100)
-            max_dimension: Maximum width or height (maintains aspect ratio)
-            
-        Returns:
-            object_id of the saved image
-        """
+        start_time = time.time()
         path = Path(file_path)
         
         if path.suffix.lower() not in MediaStorage.SUPPORTED_IMAGE_FORMATS:
@@ -50,25 +38,20 @@ class MediaStorage:
         
         name = name or path.stem
         
-        # Read and process image
         with Image.open(file_path) as img:
-            # Get original metadata
             format_name = img.format
             original_size = img.size
             mode = img.mode
             
-            # Resize if needed
             if max_dimension and max(img.size) > max_dimension:
                 img.thumbnail((max_dimension, max_dimension), Image.Resampling.LANCZOS)
                 logger.info(f"Resized image from {original_size} to {img.size}")
             
-            # Convert to RGB if necessary (for JPEG)
             if compress and img.mode in ('RGBA', 'LA', 'P'):
                 rgb_img = Image.new('RGB', img.size, (255, 255, 255))
                 rgb_img.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
                 img = rgb_img
             
-            # Save to bytes
             buffer = io.BytesIO()
             save_format = 'JPEG' if compress else format_name
             save_kwargs = {'quality': quality, 'optimize': True} if compress else {}
@@ -76,7 +59,6 @@ class MediaStorage:
             img.save(buffer, format=save_format, **save_kwargs)
             image_bytes = buffer.getvalue()
         
-        # Create metadata schema
         schema_hint = json.dumps({
             'media_type': 'image',
             'format': format_name,
@@ -89,7 +71,6 @@ class MediaStorage:
             'timestamp': datetime.now().isoformat()
         })
         
-        # Save to database
         object_id = add_object(
             name=name,
             obj_type='IMAGE',
@@ -98,8 +79,9 @@ class MediaStorage:
             description=description or f"Image: {name}",
             schema_hint=schema_hint
         )
-        
-        logger.info(f"Saved image '{name}' with ID {object_id} ({len(image_bytes)} bytes)")
+
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Saved image '{name}' with ID {object_id} ({len(image_bytes)} bytes) in {elapsed:.2f} ms")
         return object_id
     
     @staticmethod
@@ -108,21 +90,9 @@ class MediaStorage:
         name: Optional[str] = None,
         tags: str = "video",
         description: Optional[str] = None,
-        chunk_size: int = 10 * 1024 * 1024  # 10MB chunks for large videos
+        chunk_size: int = 10 * 1024 * 1024
     ) -> int:
-        """
-        Save a video to OraLake
-        
-        Args:
-            file_path: Path to the video file
-            name: Custom name (defaults to filename)
-            tags: Comma-separated tags
-            description: Video description
-            chunk_size: Not used yet, but reserved for future chunking implementation
-            
-        Returns:
-            object_id of the saved video
-        """
+        start_time = time.time()
         path = Path(file_path)
         
         if path.suffix.lower() not in MediaStorage.SUPPORTED_VIDEO_FORMATS:
@@ -130,20 +100,17 @@ class MediaStorage:
         
         name = name or path.stem
         
-        # Read video file
         with open(file_path, 'rb') as f:
             video_bytes = f.read()
         
-        # Create metadata schema
         schema_hint = json.dumps({
             'media_type': 'video',
-            'format': path.suffix.lower()[1:],  # Remove the dot
+            'format': path.suffix.lower()[1:],
             'file_size_bytes': len(video_bytes),
             'timestamp': datetime.now().isoformat(),
             'original_filename': path.name
         })
         
-        # Save to database
         object_id = add_object(
             name=name,
             obj_type='VIDEO',
@@ -153,27 +120,18 @@ class MediaStorage:
             schema_hint=schema_hint
         )
         
-        logger.info(f"Saved video '{name}' with ID {object_id} ({len(video_bytes)} bytes)")
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Saved video '{name}' with ID {object_id} ({len(video_bytes)} bytes) in {elapsed:.2f} ms")
         return object_id
     
     @staticmethod
     def get_image(object_id: int, save_to: Optional[str] = None) -> Tuple[bytes, Dict]:
-        """
-        Retrieve an image from OraLake
-        
-        Args:
-            object_id: ID of the image object
-            save_to: Optional path to save the image file
-            
-        Returns:
-            Tuple of (image_bytes, metadata_dict)
-        """
+        start_time = time.time()
         image_bytes = get_object(object_id)
         
         if image_bytes is None:
             raise ValueError(f"Image with ID {object_id} not found")
         
-        # Parse image to get metadata
         img = Image.open(io.BytesIO(image_bytes))
         metadata = {
             'format': img.format,
@@ -187,34 +145,27 @@ class MediaStorage:
                 f.write(image_bytes)
             logger.info(f"Saved image to {save_to}")
         
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Retrieved image ID {object_id} in {elapsed:.2f} ms")
         return image_bytes, metadata
     
     @staticmethod
     def get_video(object_id: int, save_to: Optional[str] = None) -> Tuple[bytes, Dict]:
-        """
-        Retrieve a video from OraLake
-        
-        Args:
-            object_id: ID of the video object
-            save_to: Optional path to save the video file
-            
-        Returns:
-            Tuple of (video_bytes, metadata_dict)
-        """
+        start_time = time.time()
         video_bytes = get_object(object_id)
         
         if video_bytes is None:
             raise ValueError(f"Video with ID {object_id} not found")
         
-        metadata = {
-            'file_size_bytes': len(video_bytes)
-        }
+        metadata = {'file_size_bytes': len(video_bytes)}
         
         if save_to:
             with open(save_to, 'wb') as f:
                 f.write(video_bytes)
             logger.info(f"Saved video to {save_to}")
         
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Retrieved video ID {object_id} in {elapsed:.2f} ms")
         return video_bytes, metadata
     
     @staticmethod
@@ -227,24 +178,9 @@ class MediaStorage:
         quality: int = 85,
         max_dimension: Optional[int] = None
     ) -> bool:
-        """
-        Update an existing image (creates a new version)
-        
-        Args:
-            name: Name of the existing image object
-            file_path: Path to the new image file
-            tags: Updated tags
-            description: Updated description
-            compress: Whether to compress the image
-            quality: JPEG quality (1-100)
-            max_dimension: Maximum width or height
-            
-        Returns:
-            True if successful
-        """
+        start_time = time.time()
         path = Path(file_path)
         
-        # Read and process image (same as save_image)
         with Image.open(file_path) as img:
             format_name = img.format
             original_size = img.size
@@ -261,11 +197,9 @@ class MediaStorage:
             buffer = io.BytesIO()
             save_format = 'JPEG' if compress else format_name
             save_kwargs = {'quality': quality, 'optimize': True} if compress else {}
-            
             img.save(buffer, format=save_format, **save_kwargs)
             image_bytes = buffer.getvalue()
         
-        # Update in database
         result = update_object(
             name=name,
             obj_type='IMAGE',
@@ -274,7 +208,8 @@ class MediaStorage:
             description=description or f"Updated image: {name}"
         )
         
-        logger.info(f"Updated image '{name}' ({len(image_bytes)} bytes)")
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Updated image '{name}' ({len(image_bytes)} bytes) in {elapsed:.2f} ms")
         return result
     
     @staticmethod
@@ -284,18 +219,7 @@ class MediaStorage:
         tags: str = "video",
         description: Optional[str] = None
     ) -> bool:
-        """
-        Update an existing video (creates a new version)
-        
-        Args:
-            name: Name of the existing video object
-            file_path: Path to the new video file
-            tags: Updated tags
-            description: Updated description
-            
-        Returns:
-            True if successful
-        """
+        start_time = time.time()
         path = Path(file_path)
         
         with open(file_path, 'rb') as f:
@@ -309,53 +233,44 @@ class MediaStorage:
             description=description or f"Updated video: {name}"
         )
         
-        logger.info(f"Updated video '{name}' ({len(video_bytes)} bytes)")
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Updated video '{name}' ({len(video_bytes)} bytes) in {elapsed:.2f} ms")
         return result
     
     @staticmethod
     def rollback_media(name: str, media_type: str, version: int, save_to: Optional[str] = None) -> bool:
-        """
-        Rollback an image or video to a previous version
-        
-        Args:
-            name: Name of the media object
-            media_type: 'IMAGE' or 'VIDEO'
-            version: Target version number
-            save_to: Optional path to save the rolled-back media
-            
-        Returns:
-            True if successful
-        """
+        start_time = time.time()
         if media_type.upper() not in ['IMAGE', 'VIDEO']:
             raise ValueError("media_type must be 'IMAGE' or 'VIDEO'")
         
         result = rollback_object(name, media_type.upper(), version)
+        elapsed = (time.time() - start_time) * 1000
         
-        if result and save_to:
-            # Get the rolled-back content and save it
-            # Note: You'd need to get the object_id first
-            logger.info(f"Rolled back {media_type} '{name}' to version {version}")
+        if result:
+            logger.info(f"Rolled back {media_type} '{name}' to version {version} in {elapsed:.2f} ms")
+        else:
+            logger.warning(f"Rollback failed for {media_type} '{name}' (version {version}) after {elapsed:.2f} ms")
         
         return result
 
 
-# Utility functions for common operations
 def save_image_from_bytes(
     image_bytes: bytes,
     name: str,
     tags: str = "image",
     description: Optional[str] = None
 ) -> int:
-    """
-    Save an image directly from bytes (useful for API uploads)
-    """
-    return add_object(
+    start_time = time.time()
+    object_id = add_object(
         name=name,
         obj_type='IMAGE',
         content=image_bytes,
         tags=tags,
         description=description
     )
+    elapsed = (time.time() - start_time) * 1000
+    logger.info(f"Saved image '{name}' from bytes (ID {object_id}) in {elapsed:.2f} ms")
+    return object_id
 
 
 def convert_image_format(
@@ -363,17 +278,7 @@ def convert_image_format(
     output_format: str = 'JPEG',
     quality: int = 85
 ) -> bytes:
-    """
-    Convert an image to a different format
-    
-    Args:
-        object_id: ID of the source image
-        output_format: Target format (JPEG, PNG, WEBP, etc.)
-        quality: Quality for lossy formats
-        
-    Returns:
-        Converted image bytes
-    """
+    start_time = time.time()
     image_bytes = get_object(object_id)
     
     if image_bytes is None:
@@ -381,8 +286,6 @@ def convert_image_format(
     
     with Image.open(io.BytesIO(image_bytes)) as img:
         buffer = io.BytesIO()
-        
-        # Convert RGBA to RGB for JPEG
         if output_format.upper() == 'JPEG' and img.mode in ('RGBA', 'LA', 'P'):
             rgb_img = Image.new('RGB', img.size, (255, 255, 255))
             rgb_img.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
@@ -390,8 +293,11 @@ def convert_image_format(
         
         save_kwargs = {'quality': quality} if output_format.upper() in ['JPEG', 'WEBP'] else {}
         img.save(buffer, format=output_format.upper(), **save_kwargs)
-        
-        return buffer.getvalue()
+        converted = buffer.getvalue()
+    
+    elapsed = (time.time() - start_time) * 1000
+    logger.info(f"Converted image ID {object_id} to {output_format.upper()} in {elapsed:.2f} ms")
+    return converted
 
 
 def create_thumbnail(
@@ -400,18 +306,7 @@ def create_thumbnail(
     save_as_new: bool = True,
     thumbnail_name: Optional[str] = None
 ) -> int:
-    """
-    Create a thumbnail from an existing image
-    
-    Args:
-        object_id: ID of the source image
-        size: Thumbnail size (width, height)
-        save_as_new: If True, saves as new object; if False, returns bytes only
-        thumbnail_name: Name for the thumbnail object
-        
-    Returns:
-        object_id of the thumbnail (if save_as_new=True)
-    """
+    start_time = time.time()
     image_bytes = get_object(object_id)
     
     if image_bytes is None:
@@ -419,19 +314,23 @@ def create_thumbnail(
     
     with Image.open(io.BytesIO(image_bytes)) as img:
         img.thumbnail(size, Image.Resampling.LANCZOS)
-        
         buffer = io.BytesIO()
         img.save(buffer, format='JPEG', quality=85, optimize=True)
         thumbnail_bytes = buffer.getvalue()
     
     if save_as_new:
         name = thumbnail_name or f"thumbnail_{object_id}"
-        return add_object(
+        new_id = add_object(
             name=name,
             obj_type='IMAGE',
             content=thumbnail_bytes,
             tags='thumbnail,image',
             description=f"Thumbnail of image ID {object_id}"
         )
+        elapsed = (time.time() - start_time) * 1000
+        logger.info(f"Created thumbnail '{name}' (ID {new_id}) in {elapsed:.2f} ms")
+        return new_id
     
+    elapsed = (time.time() - start_time) * 1000
+    logger.info(f"Generated thumbnail for image ID {object_id} in {elapsed:.2f} ms")
     return thumbnail_bytes
